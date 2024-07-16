@@ -260,31 +260,40 @@ public class Loader {
     /** Returns {@code getVersion(groupId, artifactId, cls).split(separator)[n].equals(getVersion().split(separator)[0])}
      *  where {@code n = versions.length - (versions[versions.length - 1].equals("SNAPSHOT") ? 2 : 1)} or false on error.
      *  Also calls {@link Logger#warn(String)} on error when {@code logWarnings && isLoadLibraries()}. */
-    public static boolean checkVersion(String groupId, String artifactId, String separator, boolean logWarnings, Class cls) {
+    public static boolean checkVersion(String groupId, String artifactId, String separator, boolean logWarnings, Class<?> cls) {
         try {
             String javacppVersion = getVersion();
             String version = getVersion(groupId, artifactId, cls);
+
             if (version == null) {
-                if (logWarnings && isLoadLibraries()) {
-                    logger.warn("Version of " + groupId + ":" + artifactId + " could not be found.");
-                }
+                logWarning(logWarnings, "Version of " + groupId + ":" + artifactId + " could not be found.");
                 return false;
             }
-            String[] javacppVersions = javacppVersion.split(separator);
-            String[] versions = version.split(separator);
-            int n = versions.length - (versions[versions.length - 1].equals("SNAPSHOT") ? 2 : 1);
-            boolean matches = versions[n].equals(javacppVersions[0]);
-            if (!matches && logWarnings && isLoadLibraries()) {
-                logger.warn("Versions of org.bytedeco:javacpp:" + javacppVersion + " and " + groupId + ":" + artifactId + ":" + version + " do not match.");
+
+            boolean matches = compareVersions(javacppVersion, version, separator);
+            if (!matches) {
+                logWarning(logWarnings, "Versions of org.bytedeco:javacpp:" + javacppVersion + " and " + groupId + ":" + artifactId + ":" + version + " do not match.");
             }
             return matches;
         } catch (Exception ex) {
-            if (logWarnings && isLoadLibraries()) {
-                logger.warn("Unable to load properties : " + ex.getMessage());
-            }
+            logWarning(logWarnings, "Unable to load properties : " + ex.getMessage());
+            return false;
         }
-        return false;
     }
+
+    private static boolean compareVersions(String javacppVersion, String version, String separator) {
+        String[] javacppVersions = javacppVersion.split(separator);
+        String[] versions = version.split(separator);
+        int n = versions.length - (versions[versions.length - 1].equals("SNAPSHOT") ? 2 : 1);
+        return versions[n].equals(javacppVersions[0]);
+    }
+
+    private static void logWarning(boolean logWarnings, String message) {
+        if (logWarnings && isLoadLibraries()) {
+            logger.warn(message);
+        }
+    }
+
 
     /** Returns {@code getVersion("org.bytedeco", "javacpp")}. */
     public static String getVersion() throws IOException {

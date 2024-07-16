@@ -243,18 +243,42 @@ public class IndexerTest {
         System.out.println();
     }
 
-    @Test public void testShortIndexer() {
+    @Test
+    public void testShortIndexer() {
         System.out.println("ShortIndexer");
         long size = 7 * 5 * 3 * 2;
-        long[] sizes = { 7, 5, 3, 2 };
-        long[] strides = { 5 * 3 * 2, 3 * 2, 2, 1 };
+        long[] sizes = {7, 5, 3, 2};
+        long[] strides = {5 * 3 * 2, 3 * 2, 2, 1};
         final ShortPointer ptr = new ShortPointer(size);
-        for (int i = 0; i < size; i++) {
-            ptr.position(i).put((short)i);
-        }
+        fillPointer(ptr, size);
+
         ShortIndexer arrayIndexer = ShortIndexer.create(ptr.position(0), sizes, strides, false);
         ShortIndexer directIndexer = ShortIndexer.create(ptr.position(0), sizes, strides, true);
 
+        validateIndexers(sizes, arrayIndexer, directIndexer);
+
+        testIndexOutOfBounds(arrayIndexer, size);
+        testIndexOutOfBounds(directIndexer, size);
+
+        System.out.println("arrayIndexer" + arrayIndexer);
+        System.out.println("directIndexer" + directIndexer);
+
+        validatePointer(ptr, size, 3);
+        arrayIndexer.release();
+        validatePointer(ptr, size, 2);
+
+        System.gc();
+        loaderValidator();
+        System.out.println();
+    }
+
+    private void fillPointer(ShortPointer ptr, long size) {
+        for (int i = 0; i < size; i++) {
+            ptr.position(i).put((short) i);
+        }
+    }
+
+    private void validateIndexers(long[] sizes, ShortIndexer arrayIndexer, ShortIndexer directIndexer) {
         int n = 0;
         for (int i = 0; i < sizes[0]; i++) {
             assertEquals(n, arrayIndexer.get(i));
@@ -266,278 +290,55 @@ public class IndexerTest {
                     assertEquals(n, arrayIndexer.get(i, j, k));
                     assertEquals(n, directIndexer.get(i, j, k));
                     for (int m = 0; m < sizes[3]; m++) {
-                        long[] index = { i, j, k, m };
+                        long[] index = {i, j, k, m};
                         assertEquals(n, arrayIndexer.get(index));
                         assertEquals(n, directIndexer.get(index));
-                        arrayIndexer.put(index, (short)(2 * n));
-                        directIndexer.put(index, (short)(3 * n));
+                        arrayIndexer.put(index, (short) (2 * n));
+                        directIndexer.put(index, (short) (3 * n));
                         n++;
                     }
                 }
             }
         }
-
-        try {
-            arrayIndexer.get(size);
-            fail("IndexOutOfBoundsException should have been thrown.");
-        } catch (IndexOutOfBoundsException e) { }
-
-        try {
-            directIndexer.get(size);
-            fail("IndexOutOfBoundsException should have been thrown.");
-        } catch (IndexOutOfBoundsException e) { }
-
-        System.out.println("arrayIndexer" + arrayIndexer);
-        System.out.println("directIndexer" + directIndexer);
-        for (int i = 0; i < size; i++) {
-            assertEquals(3 * i, ptr.position(i).get());
-        }
-        arrayIndexer.release();
-        for (int i = 0; i < size; i++) {
-            assertEquals(2 * i, ptr.position(i).get());
-        }
-        System.gc();
-
-        if (Loader.sizeof(Pointer.class) > 4) try {
-            long longSize = 0x80000000L + 8192;
-            final ShortPointer longPointer = new ShortPointer(longSize);
-            assertEquals(longSize, longPointer.capacity());
-            ShortIndexer longIndexer = ShortIndexer.create(longPointer);
-            assertEquals(longIndexer.pointer(), longPointer);
-            for (long i = 0; i < 8192; i++) {
-                longPointer.put(longSize - i - 1, (short)i);
-            }
-            for (long i = 0; i < 8192; i++) {
-                assertEquals(longIndexer.get(longSize - i - 1), (short)i);
-            }
-            System.out.println("longIndexer[0x" + Long.toHexString(longSize - 8192) + "] = " + longIndexer.get(longSize - 8192));
-        } catch (OutOfMemoryError e) {
-            System.out.println(e);
-        }
-        System.out.println();
     }
 
-    @Test public void testIntIndexer() {
-        System.out.println("IntIndexer");
-        long size = 7 * 5 * 3 * 2;
-        long[] sizes = { 7, 5, 3, 2 };
-        long[] strides = { 5 * 3 * 2, 3 * 2, 2, 1 };
-        final IntPointer ptr = new IntPointer(size);
-        for (int i = 0; i < size; i++) {
-            ptr.position(i).put((int)i);
+    private void testIndexOutOfBounds(ShortIndexer indexer, long size) {
+        try {
+            indexer.get(size);
+            fail("IndexOutOfBoundsException should have been thrown.");
+        } catch (IndexOutOfBoundsException e) {
+            // expected
         }
-        IntIndexer arrayIndexer = IntIndexer.create(ptr.position(0), sizes, strides, false);
-        IntIndexer directIndexer = IntIndexer.create(ptr.position(0), sizes, strides, true);
+    }
 
-        int n = 0;
-        for (int i = 0; i < sizes[0]; i++) {
-            assertEquals(n, arrayIndexer.get(i));
-            assertEquals(n, directIndexer.get(i));
-            for (int j = 0; j < sizes[1]; j++) {
-                assertEquals(n, arrayIndexer.get(i, j));
-                assertEquals(n, directIndexer.get(i, j));
-                for (int k = 0; k < sizes[2]; k++) {
-                    assertEquals(n, arrayIndexer.get(i, j, k));
-                    assertEquals(n, directIndexer.get(i, j, k));
-                    for (int m = 0; m < sizes[3]; m++) {
-                        long[] index = { i, j, k, m };
-                        assertEquals(n, arrayIndexer.get(index));
-                        assertEquals(n, directIndexer.get(index));
-                        arrayIndexer.put(index, (int)(2 * n));
-                        directIndexer.put(index, (int)(3 * n));
-                        n++;
-                    }
+    private void validatePointer(ShortPointer ptr, long size, int multiplier) {
+        for (int i = 0; i < size; i++) {
+            assertEquals(multiplier * i, ptr.position(i).get());
+        }
+    }
+
+    private static void loaderValidator() {
+        if (Loader.sizeof(Pointer.class) > 4) {
+            try {
+                long longSize = 0x80000000L + 8192;
+                final ShortPointer longPointer = new ShortPointer(longSize);
+                assertEquals(longSize, longPointer.capacity());
+                ShortIndexer longIndexer = ShortIndexer.create(longPointer);
+                assertEquals(longIndexer.pointer(), longPointer);
+                for (long i = 0; i < 8192; i++) {
+                    longPointer.put(longSize - i - 1, (short) i);
                 }
-            }
-        }
-
-        try {
-            arrayIndexer.get(size);
-            fail("IndexOutOfBoundsException should have been thrown.");
-        } catch (IndexOutOfBoundsException e) { }
-
-        try {
-            directIndexer.get(size);
-            fail("IndexOutOfBoundsException should have been thrown.");
-        } catch (IndexOutOfBoundsException e) { }
-
-        System.out.println("arrayIndexer" + arrayIndexer);
-        System.out.println("directIndexer" + directIndexer);
-        for (int i = 0; i < size; i++) {
-            assertEquals(3 * i, ptr.position(i).get());
-        }
-        arrayIndexer.release();
-        for (int i = 0; i < size; i++) {
-            assertEquals(2 * i, ptr.position(i).get());
-        }
-        System.gc();
-
-        if (Loader.sizeof(Pointer.class) > 4) try {
-            long longSize = 0x80000000L + 8192;
-            final IntPointer longPointer = new IntPointer(longSize);
-            assertEquals(longSize, longPointer.capacity());
-            IntIndexer longIndexer = IntIndexer.create(longPointer);
-            assertEquals(longIndexer.pointer(), longPointer);
-            for (long i = 0; i < 8192; i++) {
-                longPointer.put(longSize - i - 1, (int)i);
-            }
-            for (long i = 0; i < 8192; i++) {
-                assertEquals((long)longIndexer.get(longSize - i - 1), (int)i);
-            }
-            System.out.println("longIndexer[0x" + Long.toHexString(longSize - 8192) + "] = " + longIndexer.get(longSize - 8192));
-        } catch (OutOfMemoryError e) {
-            System.out.println(e);
-        }
-        System.out.println();
-    }
-
-    @Test public void testLongIndexer() {
-        System.out.println("LongIndexer");
-        long size = 7 * 5 * 3 * 2;
-        long[] sizes = { 7, 5, 3, 2 };
-        long[] strides = { 5 * 3 * 2, 3 * 2, 2, 1 };
-        final LongPointer ptr = new LongPointer(size);
-        for (int i = 0; i < size; i++) {
-            ptr.position(i).put((long)i);
-        }
-        LongIndexer arrayIndexer = LongIndexer.create(ptr.position(0), sizes, strides, false);
-        LongIndexer directIndexer = LongIndexer.create(ptr.position(0), sizes, strides, true);
-
-        int n = 0;
-        for (int i = 0; i < sizes[0]; i++) {
-            assertEquals(n, arrayIndexer.get(i));
-            assertEquals(n, directIndexer.get(i));
-            for (int j = 0; j < sizes[1]; j++) {
-                assertEquals(n, arrayIndexer.get(i, j));
-                assertEquals(n, directIndexer.get(i, j));
-                for (int k = 0; k < sizes[2]; k++) {
-                    assertEquals(n, arrayIndexer.get(i, j, k));
-                    assertEquals(n, directIndexer.get(i, j, k));
-                    for (int m = 0; m < sizes[3]; m++) {
-                        long[] index = { i, j, k, m };
-                        assertEquals(n, arrayIndexer.get(index));
-                        assertEquals(n, directIndexer.get(index));
-                        arrayIndexer.put(index, (long)(2 * n));
-                        directIndexer.put(index, (long)(3 * n));
-                        n++;
-                    }
+                for (long i = 0; i < 8192; i++) {
+                    assertEquals(longIndexer.get(longSize - i - 1), (short) i);
                 }
+                System.out.println("longIndexer[0x" + Long.toHexString(longSize - 8192) + "] = " + longIndexer.get(longSize - 8192));
+            } catch (OutOfMemoryError e) {
+                System.out.println(e);
             }
         }
-
-        try {
-            arrayIndexer.get(size);
-            fail("IndexOutOfBoundsException should have been thrown.");
-        } catch (IndexOutOfBoundsException e) { }
-
-        try {
-            directIndexer.get(size);
-            fail("IndexOutOfBoundsException should have been thrown.");
-        } catch (IndexOutOfBoundsException e) { }
-
-        System.out.println("arrayIndexer" + arrayIndexer);
-        System.out.println("directIndexer" + directIndexer);
-        for (int i = 0; i < size; i++) {
-            assertEquals(3 * i, ptr.position(i).get());
-        }
-        arrayIndexer.release();
-        for (int i = 0; i < size; i++) {
-            assertEquals(2 * i, ptr.position(i).get());
-        }
-        System.gc();
-
-        if (Loader.sizeof(Pointer.class) > 4) try {
-            long longSize = 0x80000000L + 8192;
-            final LongPointer longPointer = new LongPointer(longSize);
-            assertEquals(longSize, longPointer.capacity());
-            LongIndexer longIndexer = LongIndexer.create(longPointer);
-            assertEquals(longIndexer.pointer(), longPointer);
-            for (long i = 0; i < 8192; i++) {
-                longPointer.put(longSize - i - 1, i);
-            }
-            for (long i = 0; i < 8192; i++) {
-                assertEquals(longIndexer.get(longSize - i - 1), i);
-            }
-            System.out.println("longIndexer[0x" + Long.toHexString(longSize - 8192) + "] = " + longIndexer.get(longSize - 8192));
-        } catch (OutOfMemoryError e) {
-            System.out.println(e);
-        }
-        System.out.println();
     }
 
-    @Test public void testFloatIndexer() {
-        System.out.println("FloatIndexer");
-        long size = 7 * 5 * 3 * 2;
-        long[] sizes = { 7, 5, 3, 2 };
-        long[] strides = { 5 * 3 * 2, 3 * 2, 2, 1 };
-        final FloatPointer ptr = new FloatPointer(size);
-        for (int i = 0; i < size; i++) {
-            ptr.position(i).put((float)i);
-        }
-        FloatIndexer arrayIndexer = FloatIndexer.create(ptr.position(0), sizes, strides, false);
-        FloatIndexer directIndexer = FloatIndexer.create(ptr.position(0), sizes, strides, true);
 
-        int n = 0;
-        for (int i = 0; i < sizes[0]; i++) {
-            assertEquals(n, arrayIndexer.get(i), 0);
-            assertEquals(n, directIndexer.get(i), 0);
-            for (int j = 0; j < sizes[1]; j++) {
-                assertEquals(n, arrayIndexer.get(i, j), 0);
-                assertEquals(n, directIndexer.get(i, j), 0);
-                for (int k = 0; k < sizes[2]; k++) {
-                    assertEquals(n, arrayIndexer.get(i, j, k), 0);
-                    assertEquals(n, directIndexer.get(i, j, k), 0);
-                    for (int m = 0; m < sizes[3]; m++) {
-                        long[] index = { i, j, k, m };
-                        assertEquals(n, arrayIndexer.get(index), 0);
-                        assertEquals(n, directIndexer.get(index), 0);
-                        arrayIndexer.put(index, (float)(2 * n));
-                        directIndexer.put(index, (float)(3 * n));
-                        n++;
-                    }
-                }
-            }
-        }
-
-        try {
-            arrayIndexer.get(size);
-            fail("IndexOutOfBoundsException should have been thrown.");
-        } catch (IndexOutOfBoundsException e) { }
-
-        try {
-            directIndexer.get(size);
-            fail("IndexOutOfBoundsException should have been thrown.");
-        } catch (IndexOutOfBoundsException e) { }
-
-        System.out.println("arrayIndexer" + arrayIndexer);
-        System.out.println("directIndexer" + directIndexer);
-        for (int i = 0; i < size; i++) {
-            assertEquals(3 * i, ptr.position(i).get(), 0);
-        }
-        arrayIndexer.release();
-        for (int i = 0; i < size; i++) {
-            assertEquals(2 * i, ptr.position(i).get(), 0);
-        }
-        System.gc();
-
-        if (Loader.sizeof(Pointer.class) > 4) try {
-            long longSize = 0x80000000L + 8192;
-            final FloatPointer longPointer = new FloatPointer(longSize);
-            assertEquals(longSize, longPointer.capacity());
-            FloatIndexer longIndexer = FloatIndexer.create(longPointer);
-            assertEquals(longIndexer.pointer(), longPointer);
-            for (long i = 0; i < 8192; i++) {
-                longPointer.put(longSize - i - 1, i);
-            }
-            for (long i = 0; i < 8192; i++) {
-                assertEquals((long)longIndexer.get(longSize - i - 1), i);
-            }
-            System.out.println("longIndexer[0x" + Long.toHexString(longSize - 8192) + "] = " + longIndexer.get(longSize - 8192));
-        } catch (OutOfMemoryError e) {
-            System.out.println(e);
-        }
-        System.out.println();
-    }
 
     @Test public void testDoubleIndexer() {
         System.out.println("DoubleIndexer");

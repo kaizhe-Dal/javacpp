@@ -156,33 +156,60 @@ public class AdapterTest {
         Loader.load(c);
     }
 
-    @Test public void testStdString() {
+    @Test
+    public void testStdString() {
         System.out.println("StdString");
 
-        byte[] data = new byte[42];
+        testByteArray();
+        testAsciiString();
+        testBytePointer();
+        testWideString();
+        testConstString();
+    }
+
+    private void testByteArray() {
+        byte[] data = createTestByteArray(42);
+        BytePointer dataPtr1 = new BytePointer(data);
+        BytePointer dataPtr2 = testStdString(dataPtr1);
+        assertByteArraysEqual(data, dataPtr1, dataPtr2);
+    }
+
+    private byte[] createTestByteArray(int length) {
+        byte[] data = new byte[length];
         for (int i = 0; i < data.length; i++) {
             data[i] = (byte)i;
         }
-        BytePointer dataPtr1 = new BytePointer(data);
-        BytePointer dataPtr2 = testStdString(dataPtr1);
-        for (int i = 0; i < data.length; i++) {
-            assertEquals(data[i], dataPtr1.get(i));
-            assertEquals(data[i], dataPtr2.get(i));
-        }
+        return data;
+    }
 
+    private void assertByteArraysEqual(byte[] expected, BytePointer... pointers) {
+        for (BytePointer pointer : pointers) {
+            for (int i = 0; i < expected.length; i++) {
+                assertEquals(expected[i], pointer.get(i));
+            }
+        }
+    }
+
+    private void testAsciiString() {
         String textStr1 = "This is a normal ASCII string.";
         String textStr2 = testStdString(textStr1);
         assertEquals(textStr1, textStr2);
         String textStr3 = testStdString2(textStr1);
         assertEquals(textStr1, textStr3);
+    }
 
+    private void testBytePointer() {
+        String textStr1 = "This is a normal ASCII string.";
         BytePointer textPtr1 = new BytePointer(textStr1);
         BytePointer textPtr2 = testStdString(textPtr1);
         assertEquals(textStr1, textPtr1.getString());
         assertEquals(textStr1, textPtr2.getString());
         BytePointer textPtr3 = testStdString2(textPtr1);
         assertEquals(textStr1, textPtr3.getString());
+    }
 
+    private void testWideString() {
+        String textStr1 = "This is a normal ASCII string.";
         CharPointer textCharPtr1 = new CharPointer(textStr1);
         assertEquals(textStr1, textCharPtr1.getString());
 
@@ -190,37 +217,51 @@ public class AdapterTest {
         assertEquals(textStr1, textIntPtr1.getString());
 
         if (Loader.getPlatform().startsWith("windows")) {
-            // UTF-16
-            CharPointer textCharPtr2 = testStdWString(textCharPtr1);
-            assertEquals(textStr1, textCharPtr2.getString());
-
-            CharPointer textCharPtr3 = testStdWString2(textCharPtr1);
-            assertEquals(textStr1, textCharPtr3.getString());
-
-            String textStr4 = testStdWString(textStr1);
-            assertEquals(textStr1, textStr4);
+            testWindowsWideString(textStr1, textCharPtr1);
         } else {
-            // UTF-32
-            IntPointer textIntPtr2 = testStdWString(textIntPtr1);
-            assertEquals(textStr1, textIntPtr2.getString());
-            IntPointer textIntPtr3 = testStdWString2(textIntPtr1);
-            assertEquals(textStr1, textIntPtr3.getString());
+            testNonWindowsWideString(textStr1, textIntPtr1);
         }
 
+        testU16String(textStr1, textCharPtr1);
+        testU32String(textStr1, textIntPtr1);
+    }
+
+    private void testWindowsWideString(String textStr1, CharPointer textCharPtr1) {
+        CharPointer textCharPtr2 = testStdWString(textCharPtr1);
+        assertEquals(textStr1, textCharPtr2.getString());
+
+        CharPointer textCharPtr3 = testStdWString2(textCharPtr1);
+        assertEquals(textStr1, textCharPtr3.getString());
+
+        String textStr4 = testStdWString(textStr1);
+        assertEquals(textStr1, textStr4);
+    }
+
+    private void testNonWindowsWideString(String textStr1, IntPointer textIntPtr1) {
+        IntPointer textIntPtr2 = testStdWString(textIntPtr1);
+        assertEquals(textStr1, textIntPtr2.getString());
+        IntPointer textIntPtr3 = testStdWString2(textIntPtr1);
+        assertEquals(textStr1, textIntPtr3.getString());
+    }
+
+    private void testU16String(String textStr1, CharPointer textCharPtr1) {
         CharPointer textCharPtr4 = testStdU16String(textCharPtr1);
         assertEquals(textStr1, textCharPtr4.getString());
 
         String textStr5 = testStdU16String(textStr1);
         assertEquals(textStr1, textStr5);
+    }
 
+    private void testU32String(String textStr1, IntPointer textIntPtr1) {
         IntPointer textIntPtr4 = testStdU32String(textIntPtr1);
         assertEquals(textStr1, textIntPtr4.getString());
+    }
 
+    private void testConstString() {
         byte[] test = getConstStdString();
         assertEquals("test", new String(test));
         byte[] test2 = getConstStdString2();
         assertEquals("test", new String(test2));
-        System.gc();
     }
 
     @Test public void testCharString() {

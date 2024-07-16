@@ -1,0 +1,22 @@
+Project Name,Package Name,Type Name,Testability Smell,Cause of the Smell
+javacpp,org.bytedeco.javacpp,EnumTest.BoolEnum,Global State,The tool detected the smell in this class because the class can be accessed as a `global` state.
+javacpp,org.bytedeco.javacpp,EnumTest.ByteEnum,Global State,The tool detected the smell in this class because the class can be accessed as a `global` state.
+javacpp,org.bytedeco.javacpp,EnumTest.ShortEnum,Global State,The tool detected the smell in this class because the class can be accessed as a `global` state.
+javacpp,org.bytedeco.javacpp,EnumTest.IntEnum,Global State,The tool detected the smell in this class because the class can be accessed as a `global` state.
+javacpp,org.bytedeco.javacpp,EnumTest.LongEnum,Global State,The tool detected the smell in this class because the class can be accessed as a `global` state.
+javacpp,org.bytedeco.javacpp,EnumTest.EnumCallback,Global State,The tool detected the smell in this class because the class can be accessed as a `global` state.
+javacpp,org.bytedeco.javacpp,PointerTest,Excessive Dependency,The tool detected the smell in this class because the class depends on too many dependencies. The total number of dependencies is: 13
+javacpp,org.bytedeco.javacpp,BufferTest,Excessive Dependency,The tool detected the smell in this class because the class depends on too many dependencies. The total number of dependencies is: 9
+javacpp,org.bytedeco.javacpp,BufferTest.BufferCallback,Global State,The tool detected the smell in this class because the class can be accessed as a `global` state.
+javacpp,org.bytedeco.javacpp,IndexerTest,Excessive Dependency,The tool detected the smell in this class because the class depends on too many dependencies. The total number of dependencies is: 27
+javacpp,org.bytedeco.javacpp,ThreadTest.Callback,Global State,The tool detected the smell in this class because the class can be accessed as a `global` state.
+javacpp,org.bytedeco.javacpp,Pointer,Law of Demeter violation,The tool detected the smell in this method (asByteBuffer) because the method voilates the law of Demeter. The long chain of method invocations is : org.bytedeco.javacpp.Pointer.asDirectBuffer; org.bytedeco.javacpp.Pointer.position; org.bytedeco.javacpp.Pointer.capacity
+javacpp,org.bytedeco.javacpp,BytePointer,Law of Demeter violation,The tool detected the smell in this method (putString) because the method voilates the law of Demeter. The long chain of method invocations is : org.bytedeco.javacpp.BytePointer.put; org.bytedeco.javacpp.BytePointer.limit
+javacpp,org.bytedeco.javacpp,BytePointer,Law of Demeter violation,The tool detected the smell in this method (putString) because the method voilates the law of Demeter. The long chain of method invocations is : org.bytedeco.javacpp.BytePointer.put; org.bytedeco.javacpp.BytePointer.limit
+javacpp,org.bytedeco.javacpp,BytePointer,Law of Demeter violation,The tool detected the smell in this method (putString) because the method voilates the law of Demeter. The long chain of method invocations is : org.bytedeco.javacpp.BytePointer.put; org.bytedeco.javacpp.BytePointer.limit
+javacpp,org.bytedeco.javacpp,Loader.Detector,Global State,The tool detected the smell in this class because the class can be accessed as a `global` state.
+javacpp,org.bytedeco.javacpp,Loader.Helper,Global State,The tool detected the smell in this class because the class can be accessed as a `global` state.
+javacpp,org.bytedeco.javacpp,IntPointer,Law of Demeter violation,The tool detected the smell in this method (putString) because the method voilates the law of Demeter. The long chain of method invocations is : org.bytedeco.javacpp.IntPointer.limit; org.bytedeco.javacpp.IntPointer.put
+javacpp,org.bytedeco.javacpp,CharPointer,Law of Demeter violation,The tool detected the smell in this method (putString) because the method voilates the law of Demeter. The long chain of method invocations is : org.bytedeco.javacpp.CharPointer.limit; org.bytedeco.javacpp.CharPointer.put
+javacpp,org.bytedeco.javacpp.tools,Parser,Excessive Dependency,The tool detected the smell in this class because the class depends on too many dependencies. The total number of dependencies is: 20
+javacpp,org.bytedeco.javacpp.tools,DeclarationList,Excessive Dependency,The tool detected the smell in this class because the class depends on too many dependencies. The total number of dependencies is: 8
